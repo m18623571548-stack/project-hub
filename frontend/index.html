@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据管理系统 - 项目协作空间</title>
+<style>
+:root {
+  --primary: #1890ff;
+  --primary-dark: #096dd9;
+  --bg: #f0f2f5;
+  --card-bg: #fff;
+  --text: #262626;
+  --text-secondary: #8c8c8c;
+  --border: #f0f0f0;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --radius: 8px;
+  --success: #52c41a;
+  --warning: #faad14;
+  --error: #f5222d;
+  --sidebar-w: 240px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+  background: #001529; color: #fff; z-index: 100; overflow-y: auto;
+}
+.sidebar-logo { height: 64px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.sidebar-nav { padding: 8px 0; }
+.nav-group { margin-bottom: 4px; }
+.nav-group-title { padding: 12px 24px 8px; font-size: 12px; color: rgba(255,255,255,0.45); text-transform: uppercase; }
+.nav-item {
+  display: flex; align-items: center; padding: 10px 24px; color: rgba(255,255,255,0.65);
+  cursor: pointer; transition: all 0.2s; gap: 10px; font-size: 14px; border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.nav-item.active { color: #fff; background: var(--primary); }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+/* Main */
+.main { margin-left: var(--sidebar-w); min-height: 100vh; }
+.header {
+  height: 64px; background: var(--card-bg); display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 99;
+}
+.header-title { font-size: 18px; font-weight: 600; }
+.header-actions { display: flex; align-items: center; gap: 16px; }
+.content { padding: 24px; }
+
+/* Cards */
+.card {
+  background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 24px; margin-bottom: 16px;
+}
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.card-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+/* Stats Row */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 20px; display: flex; align-items: center; gap: 16px;
+}
+.stat-icon { font-size: 28px; width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.stat-value { font-size: 24px; font-weight: 700; }
+.stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+/* Module Grid */
+.module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.module-card {
+  background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 20px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+}
+.module-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(24,144,255,0.15); }
+.module-card.selected { border-color: var(--primary); }
+.module-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.module-card-icon { font-size: 32px; width: 48px; height: 48px; background: #e6f7ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+.module-card-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.module-card-meta { font-size: 12px; color: var(--text-secondary); }
+.module-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.module-card-files { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-secondary); }
+.module-card-users { display: flex; gap: 2px; }
+.user-avatar {
+  width: 24px; height: 24px; border-radius: 50%; background: #1890ff; color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;
+}
+.module-card-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.module-card-tag.active { background: #f6ffed; color: var(--success); border: 1px solid #b7eb8f; }
+.module-card-tag.empty { background: #fff7e6; color: var(--warning); border: 1px solid #ffd591; }
+
+/* File List */
+.file-list { margin-top: 16px; }
+.file-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px;
+  transition: background 0.2s;
+}
+.file-item:hover { background: #fafafa; }
+.file-info { display: flex; align-items: center; gap: 12px; }
+.file-icon { font-size: 18px; }
+.file-name { font-weight: 500; font-size: 14px; }
+.file-meta { font-size: 12px; color: var(--text-secondary); }
+.file-actions { display: flex; gap: 8px; }
+
+/* Buttons */
+.btn {
+  padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;
+  display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; font-family: inherit;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+.btn-outline:hover { background: #e6f7ff; }
+.btn-danger { background: #fff; color: var(--error); border: 1px solid var(--error); }
+.btn-danger:hover { background: #fff1f0; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-lg { padding: 12px 24px; font-size: 15px; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: #fff; border-radius: var(--radius); width: 90%; max-width: 560px;
+  max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+.modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 16px; }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-secondary); padding: 4px; }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 12px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Forms */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--text); }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px;
+  font-size: 14px; font-family: inherit; transition: border-color 0.2s; outline: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(24,144,255,0.2); }
+.form-textarea { min-height: 80px; resize: vertical; }
+
+/* Upload Zone */
+.upload-zone {
+  border: 2px dashed #d9d9d9; border-radius: var(--radius); padding: 32px;
+  text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 16px;
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--primary); background: #e6f7ff; }
+.upload-icon { font-size: 40px; color: var(--primary); margin-bottom: 8px; }
+.upload-text { font-size: 14px; color: var(--text-secondary); }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+.tab {
+  padding: 10px 20px; cursor: pointer; font-size: 14px; border: none; background: none;
+  color: var(--text-secondary); position: relative; font-family: inherit; transition: color 0.2s;
+}
+.tab:hover { color: var(--primary); }
+.tab.active { color: var(--primary); font-weight: 600; }
+.tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--primary); }
+
+/* Task Board */
+.task-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.task-card {
+  background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 16px; border-left: 3px solid var(--primary);
+}
+.task-card.pending { border-left-color: var(--warning); }
+.task-card.processing { border-left-color: var(--primary); }
+.task-card.completed { border-left-color: var(--success); }
+.task-card.failed { border-left-color: var(--error); }
+.task-card-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.task-card-title { font-weight: 600; font-size: 14px; }
+.task-card-module { font-size: 12px; color: var(--primary); }
+.task-card-body { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+.task-card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); }
+
+/* Progress Bar */
+.progress-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin: 8px 0; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.progress-fill.success { background: var(--success); }
+.progress-fill.warning { background: var(--warning); }
+.progress-fill.primary { background: var(--primary); }
+.progress-fill.error { background: var(--error); }
+
+/* Status Badge */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px;
+  border-radius: 10px; font-size: 12px; font-weight: 500;
+}
+.badge.success { background: #f6ffed; color: var(--success); border: 1px solid #b7eb8f; }
+.badge.warning { background: #fffbe6; color: #d48806; border: 1px solid #ffe58f; }
+.badge.error { background: #fff2f0; color: var(--error); border: 1px solid #ffccc7; }
+.badge.primary { background: #e6f7ff; color: var(--primary); border: 1px solid #91d5ff; }
+.badge.default { background: #fafafa; color: var(--text-secondary); border: 1px solid #d9d9d9; }
+
+/* Activity Feed */
+.activity-item {
+  display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.activity-time { font-size: 12px; color: var(--text-secondary); min-width: 140px; }
+.activity-content { font-size: 13px; flex: 1; }
+.activity-user { font-weight: 600; color: var(--primary); }
+.activity-module { font-size: 12px; color: var(--text-secondary); }
+
+/* Toast */
+.toast { position: fixed; top: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+.toast-item {
+  padding: 10px 20px; border-radius: 6px; color: #fff; font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease;
+}
+.toast-item.success { background: var(--success); }
+.toast-item.error { background: var(--error); }
+.toast-item.info { background: var(--primary); }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Empty State */
+.empty { text-align: center; padding: 40px; color: var(--text-secondary); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Code Preview */
+.code-block {
+  background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 6px;
+  font-family: 'Fira Code', 'Consolas', monospace; font-size: 13px; line-height: 1.6;
+  overflow-x: auto; white-space: pre-wrap; max-height: 500px; overflow-y: auto;
+}
+
+/* Detail Panel */
+.detail-panel {
+  background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 24px;
+}
+.detail-back { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 4px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">📊 项目协作空间</div>
+  <nav class="sidebar-nav">
+    <div class="nav-group">
+      <div class="nav-group-title">导航</div>
+      <button class="nav-item active" data-page="overview"><span class="nav-icon">🏠</span> 项目概览</button>
+      <button class="nav-item" data-page="modules"><span class="nav-icon">📦</span> 模块管理</button>
+      <button class="nav-item" data-page="tasks"><span class="nav-icon">✅</span> 任务协作</button>
+      <button class="nav-item" data-page="data"><span class="nav-icon">📁</span> 数据文件</button>
+      <button class="nav-item" data-page="users"><span class="nav-icon">👥</span> 成员管理</button>
+      <button class="nav-item" data-page="activities"><span class="nav-icon">📋</span> 活动日志</button>
+      <button class="nav-item" data-page="preview"><span class="nav-icon">🔗</span> 看板预览</button>
+    </div>
+  </nav>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <header class="header">
+    <div class="header-title" id="headerTitle">项目概览</div>
+    <div class="header-actions">
+      <span class="badge success" id="apiStatus">● API 连接中...</span>
+    </div>
+  </header>
+  <div class="content" id="content"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<script>
+// ============================================================
+// API 基础
+// ============================================================
+const API = '/api';
+let currentPage = 'overview';
+let currentUser = { id: 'u1', name: '系统管理员' };
+
+async function api(url, opts = {}) {
+  try {
+    const res = await fetch(API + url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+    if (!res.ok) throw new Error(await res.text());
+    return await res.json();
+  } catch (e) {
+    toast(e.message, 'error');
+    throw e;
+  }
+}
+
+// ============================================================
+// Toast
+// ============================================================
+function toast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  const item = document.createElement('div');
+  item.className = `toast-item ${type}`;
+  item.textContent = msg;
+  el.appendChild(item);
+  setTimeout(() => item.remove(), 3000);
+}
+
+// ============================================================
+// Navigation
+// ============================================================
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPage = btn.dataset.page;
+    document.getElementById('headerTitle').textContent = btn.textContent.trim();
+    navigate(currentPage);
+  });
+});
+
+async function navigate(page) {
+  const c = document.getElementById('content');
+  switch (page) {
+    case 'overview': c.innerHTML = await renderOverview(); break;
+    case 'modules': c.innerHTML = await renderModules(); await bindModuleEvents(); break;
+    case 'tasks': c.innerHTML = await renderTasks(); await bindTaskEvents(); break;
+    case 'data': c.innerHTML = await renderDataFiles(); await bindDataEvents(); break;
+    case 'users': c.innerHTML = await renderUsers(); await bindUserEvents(); break;
+    case 'activities': c.innerHTML = await renderActivities(); break;
+    case 'preview': c.innerHTML = renderPreview(); break;
+  }
+}
+
+// ============================================================
+// 页面: 项目概览
+// ============================================================
+async function renderOverview() {
+  let stats = { total_modules: 14, total_files: 0, total_users: 5, active_users: 4, total_tasks: 0, pending_tasks: 0, completed_tasks: 0 };
+  try { const r = await api('/stats'); stats = r; } catch(e) {}
+
+  let modulesHtml = '';
+  try {
+    const r = await api('/modules');
+    modulesHtml = r.modules.map(m => `
+      <div class="module-card">
+        <div class="module-card-top">
+          <div class="module-card-icon">📄</div>
+          ${m.file_count > 0 ? '<span class="badge success">有代码</span>' : '<span class="badge warning">待开发</span>'}
+        </div>
+        <div class="module-card-name">${m.name}</div>
+        <div class="module-card-meta">${m.file_count} 个文件</div>
+        <div class="module-card-footer">
+          <div class="module-card-files">📁 ${m.file_count} 文件</div>
+          <div class="module-card-users">
+            ${(m.assigned_users || []).slice(0, 3).map((uid, i) => `<div class="user-avatar" style="background:${['#1890ff','#13c2c2','#722ed1','#fa8c16'][i%4]}">${uid.slice(-2).toUpperCase()}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { modulesHtml = '<div class="empty"><div class="empty-icon">⚠️</div>无法加载模块</div>'; }
+
+  let actHtml = '';
+  try {
+    const r = await api('/activities?limit=8');
+    actHtml = r.activities.map(a => `
+      <div class="activity-item">
+        <div class="activity-time">${a.time}</div>
+        <div class="activity-content">
+          <span class="activity-user">${a.user}</span> ${a.action}
+          <span class="activity-module">【${a.module}】</span>${a.detail ? ' ' + a.detail : ''}
+        </div>
+      </div>
+    `).join('') || '<div class="empty">暂无活动记录</div>';
+  } catch(e) { actHtml = '<div class="empty">加载失败</div>'; }
+
+  return `
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon" style="background:#e6f7ff;color:#1890ff;">📦</div><div><div class="stat-value">${stats.total_modules}</div><div class="stat-label">功能模块</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#f6ffed;color:#52c41a;">📄</div><div><div class="stat-value">${stats.total_files}</div><div class="stat-label">代码文件</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fff7e6;color:#faad14;">👥</div><div><div class="stat-value">${stats.active_users}/${stats.total_users}</div><div class="stat-label">在线/总成员</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fff0f6;color:#eb2f96;">✅</div><div><div class="stat-value">${stats.completed_tasks}/${stats.total_tasks}</div><div class="stat-label">已完成/总任务</div></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📦 所有模块</div></div>
+        <div class="module-grid">${modulesHtml}</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📋 最近动态</div></div>
+        ${actHtml}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// 页面: 模块管理
+// ============================================================
+async function renderModules() {
+  let html = '';
+  try {
+    const r = await api('/modules');
+    html = r.modules.map(m => `
+      <div class="module-card" data-module="${m.id}" id="mod-${m.id}">
+        <div class="module-card-top">
+          <div class="module-card-icon">📄</div>
+          ${m.file_count > 0 ? `<span class="badge success">${m.file_count} 文件</span>` : '<span class="badge warning">空模块</span>'}
+        </div>
+        <div class="module-card-name">${m.name}</div>
+        <div class="module-card-meta">模块ID: ${m.id}</div>
+        <div class="module-card-footer">
+          <div class="module-card-files">${m.assigned_users?.length || 0} 人负责</div>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();showUploadModal('${m.id}')">📤 上传</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { html = '<div class="empty">加载失败</div>'; }
+  return `<div class="card"><div class="card-header"><div class="card-title">📦 模块代码管理</div><div style="color:var(--text-secondary);font-size:13px;">点击模块查看/上传代码文件</div></div><div class="module-grid">${html}</div></div><div id="moduleDetail"></div>`;
+}
+
+async function bindModuleEvents() {
+  document.querySelectorAll('.module-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      const mid = card.dataset.module;
+      document.querySelectorAll('.module-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      await showModuleDetail(mid);
+    });
+  });
+}
+
+async function showModuleDetail(mid) {
+  try {
+    const m = await api(`/modules/${mid}`);
+    const filesHtml = m.files.map(f => `
+      <div class="file-item">
+        <div class="file-info">
+          <div class="file-icon">${getFileIcon(f.type)}</div>
+          <div>
+            <div class="file-name">${f.name}</div>
+            <div class="file-meta">${formatSize(f.size)} · ${f.modified}</div>
+          </div>
+        </div>
+        <div class="file-actions">
+          <button class="btn btn-outline btn-sm" onclick="viewFile('${mid}', '${f.name}')">👁 查看</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteFile('${mid}', '${f.name}')">🗑</button>
+        </div>
+      </div>
+    `).join('') || '<div class="empty"><div class="empty-icon">📭</div>暂无代码文件，请上传</div>';
+
+    document.getElementById('moduleDetail').innerHTML = `
+      <div class="detail-panel" style="margin-top:16px;">
+        <button class="detail-back" onclick="document.getElementById('moduleDetail').innerHTML='';document.querySelectorAll('.module-card').forEach(c=>c.classList.remove('selected'))">← 返回模块列表</button>
+        <div class="card-header">
+          <div class="card-title">📄 ${m.name}</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="showAssignModal('${mid}')">👥 分配负责人</button>
+            <button class="btn btn-primary btn-sm" onclick="showUploadModal('${mid}')">📤 上传文件</button>
+          </div>
+        </div>
+        <div class="file-list">${filesHtml}</div>
+      </div>
+    `;
+  } catch(e) {}
+}
+
+// ============================================================
+// 页面: 任务协作
+// ============================================================
+async function renderTasks() {
+  let tasks = [];
+  try { const r = await api('/tasks'); tasks = r.tasks; } catch(e) {}
+
+  const statusMap = { pending: '⏳ 待处理', processing: '🔄 处理中', completed: '✅ 已完成', failed: '❌ 失败' };
+  const tasksHtml = tasks.map(t => `
+    <div class="task-card ${t.status}">
+      <div class="task-card-header">
+        <div class="task-card-title">${t.title}</div>
+        <span class="badge ${t.status === 'completed' ? 'success' : t.status === 'processing' ? 'primary' : t.status === 'failed' ? 'error' : 'warning'}">${statusMap[t.status] || t.status}</span>
+      </div>
+      <div class="task-card-module">📦 ${t.module_name}</div>
+      <div class="task-card-body">${t.description || '暂无描述'}</div>
+      ${t.status === 'processing' ? `<div class="progress-bar"><div class="progress-fill primary" style="width:${t.progress || 0}%"></div></div>` : ''}
+      <div class="task-card-footer">
+        <span>👤 ${t.assignee_name}</span>
+        <div style="display:flex;gap:4px;">
+          ${t.status !== 'completed' ? `<button class="btn btn-sm btn-outline" onclick="updateTaskStatus('${t.id}','completed')">✅ 完成</button>` : ''}
+          ${t.status === 'pending' ? `<button class="btn btn-sm btn-primary" onclick="updateTaskStatus('${t.id}','processing')">▶ 开始</button>` : ''}
+          <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">🗑</button>
+        </div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty"><div class="empty-icon">📭</div>暂无任务</div>';
+
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">✅ 任务协作面板</div>
+        <button class="btn btn-primary" onclick="showTaskModal()">+ 新建任务</button>
+      </div>
+      <div class="task-board">${tasksHtml}</div>
+    </div>
+  `;
+}
+
+async function bindTaskEvents() {}
+
+// ============================================================
+// 页面: 数据文件
+// ============================================================
+async function renderDataFiles() {
+  let html = '';
+  try {
+    const r = await api('/data/files');
+    html = Object.entries(r.data_files).map(([mid, info]) => `
+      <div class="card">
+        <div class="card-header"><div class="card-title">📁 ${info.module_name}</div><span class="badge default">${info.files.length} 文件</span></div>
+        ${info.files.length === 0 ? '<div class="empty">暂无数据文件</div>' : info.files.map(f => `
+          <div class="file-item">
+            <div class="file-info">
+              <div class="file-icon">${getFileIcon(f.type)}</div>
+              <div><div class="file-name">${f.name}</div><div class="file-meta">${formatSize(f.size)} · ${f.modified}</div></div>
+            </div>
+            <span class="badge primary">${f.type}</span>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  } catch(e) { html = '<div class="empty">加载失败</div>'; }
+  return html + `
+    <div class="card">
+      <div class="card-header"><div class="card-title">📤 上传原始数据文件</div></div>
+      <div class="upload-zone" id="dataUploadZone">
+        <div class="upload-icon">📁</div>
+        <div class="upload-text">拖拽或点击上传 CSV/Excel/JSON 数据文件</div>
+        <div style="margin-top:12px;">
+          <select class="form-select" id="dataModuleSelect" style="width:200px;display:inline-block;margin-right:8px;">
+            ${Object.keys(MODULE_DEFS_FOR_SELECT).map(k => `<option value="${k}">${MODULE_DEFS_FOR_SELECT[k]}</option>`).join('')}
+          </select>
+        </div>
+        <input type="file" id="dataFileInput" style="display:none" multiple accept=".csv,.xlsx,.json,.txt">
+      </div>
+      <div id="dataUploadStatus"></div>
+    </div>
+  `;
+}
+
+async function bindDataEvents() {
+  const zone = document.getElementById('dataUploadZone');
+  const input = document.getElementById('dataFileInput');
+  if (!zone || !input) return;
+
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    handleDataUpload(e.dataTransfer.files);
+  });
+  input.addEventListener('change', () => handleDataUpload(input.files));
+}
+
+async function handleDataUpload(files) {
+  const mid = document.getElementById('dataModuleSelect').value;
+  const status = document.getElementById('dataUploadStatus');
+  for (const file of files) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('module_id', mid);
+    form.append('uploader', currentUser.name);
+    try {
+      const res = await fetch(API + '/data/upload', { method: 'POST', body: form });
+      if (res.ok) {
+        status.innerHTML += `<div class="badge success" style="margin:4px;">✅ ${file.name} 上传成功</div>`;
+      }
+    } catch(e) {
+      status.innerHTML += `<div class="badge error" style="margin:4px;">❌ ${file.name} 失败</div>`;
+    }
+  }
+  setTimeout(() => { navigate('data'); }, 1000);
+}
+
+// ============================================================
+// 页面: 成员管理
+// ============================================================
+async function renderUsers() {
+  let users = [];
+  try { const r = await api('/users'); users = r.users; } catch(e) {}
+
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">👥 项目成员</div>
+        <button class="btn btn-primary" onclick="showUserModal()">+ 添加成员</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        ${users.map(u => `
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;gap:12px;align-items:center;">
+            <div class="user-avatar" style="width:40px;height:40px;font-size:16px;">${u.name[0]}</div>
+            <div style="flex:1;">
+              <div style="font-weight:600;">${u.name}</div>
+              <div style="font-size:12px;color:var(--text-secondary);">${u.role} · ${u.department}</div>
+              <div style="font-size:11px;color:var(--text-secondary);">最后登录: ${u.lastLogin}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <span class="badge ${u.status === 'active' ? 'success' : 'default'}">${u.status === 'active' ? '在线' : '离线'}</span>
+              <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">移除</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+async function bindUserEvents() {}
+
+// ============================================================
+// 页面: 活动日志
+// ============================================================
+async function renderActivities() {
+  let activities = [];
+  try { const r = await api('/activities?limit=100'); activities = r.activities; } catch(e) {}
+
+  return `
+    <div class="card">
+      <div class="card-header"><div class="card-title">📋 操作活动日志</div></div>
+      ${activities.map(a => `
+        <div class="activity-item">
+          <div class="activity-time">${a.time}</div>
+          <div class="activity-content">
+            <span class="activity-user">${a.user}</span> ${a.action}
+            <span class="activity-module">【${a.module}】</span>${a.detail ? ' ' + a.detail : ''}
+          </div>
+        </div>
+      `).join('') || '<div class="empty">暂无活动记录</div>'}
+    </div>
+  `;
+}
+
+// ============================================================
+// 页面: 看板预览
+// ============================================================
+function renderPreview() {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🔗 数据看板预览</div>
+        <a href="http://localhost:3000" target="_blank" class="btn btn-primary">在新窗口打开</a>
+      </div>
+      <div style="border-radius:8px;overflow:hidden;border:1px solid var(--border);">
+        <iframe src="http://localhost:3000" style="width:100%;height:70vh;border:none;" id="previewFrame"></iframe>
+      </div>
+      <div style="margin-top:12px;font-size:13px;color:var(--text-secondary);">
+        💡 看板系统运行在 http://localhost:3000（需在 data-management-system 目录运行 npm run dev）
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// 模态框: 上传文件
+// ============================================================
+function showUploadModal(mid) {
+  const box = document.getElementById('modalBox');
+  box.innerHTML = `
+    <div class="modal-header">📤 上传代码到模块<span class="modal-close" onclick="closeModal()">×</span></div>
+    <div class="modal-body">
+      <div class="upload-zone" id="codeUploadZone">
+        <div class="upload-icon">📤</div>
+        <div class="upload-text">拖拽或点击上传代码文件（支持 .py .js .ts .json .csv 等）</div>
+        <input type="file" id="codeFileInput" style="display:none" multiple>
+      </div>
+      <div id="uploadStatus"></div>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+
+  const zone = document.getElementById('codeUploadZone');
+  const input = document.getElementById('codeFileInput');
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    handleCodeUpload(mid, e.dataTransfer.files);
+  });
+  input.addEventListener('change', () => handleCodeUpload(mid, input.files));
+}
+
+async function handleCodeUpload(mid, files) {
+  const status = document.getElementById('uploadStatus');
+  for (const file of files) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('uploader', currentUser.name);
+    try {
+      const res = await fetch(API + `/modules/${mid}/upload`, { method: 'POST', body: form });
+      if (res.ok) {
+        const r = await res.json();
+        status.innerHTML += `<div class="badge success" style="margin:4px;">✅ ${r.filename} (${formatSize(r.size)})</div>`;
+      }
+    } catch(e) {
+      status.innerHTML += `<div class="badge error" style="margin:4px;">❌ ${file.name} 失败</div>`;
+    }
+  }
+  setTimeout(() => { closeModal(); navigate('modules'); }, 1000);
+}
+
+// ============================================================
+// 模态框: 查看文件
+// ============================================================
+async function viewFile(mid, filename) {
+  try {
+    const r = await api(`/modules/${mid}/file/${encodeURIComponent(filename)}`);
+    const box = document.getElementById('modalBox');
+    const ext = filename.split('.').pop();
+    box.innerHTML = `
+      <div class="modal-header">📄 ${filename}<span class="modal-close" onclick="closeModal()">×</span></div>
+      <div class="modal-body">
+        <div style="margin-bottom:12px;"><span class="badge primary">${ext}</span> 模块: ${mid}</div>
+        <div class="code-block">${escapeHtml(r.content)}</div>
+      </div>
+    `;
+    document.getElementById('modalOverlay').classList.add('show');
+  } catch(e) {}
+}
+
+// ============================================================
+// 模态框: 新建任务
+// ============================================================
+async function showTaskModal() {
+  let users = [], modules = [];
+  try { users = (await api('/users')).users; modules = (await api('/modules')).modules; } catch(e) {}
+
+  const box = document.getElementById('modalBox');
+  box.innerHTML = `
+    <div class="modal-header">➕ 新建协作任务<span class="modal-close" onclick="closeModal()">×</span></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">任务标题</label>
+        <input class="form-input" id="taskTitle" placeholder="例如：导入并处理持仓数据">
+      </div>
+      <div class="form-group">
+        <label class="form-label">所属模块</label>
+        <select class="form-select" id="taskModule">${modules.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">负责人</label>
+        <select class="form-select" id="taskAssignee">${users.map(u => `<option value="${u.id}">${u.name} (${u.role})</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">任务描述</label>
+        <textarea class="form-textarea" id="taskDesc" placeholder="描述任务的具体内容和要求..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="createTask()">创建任务</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+async function createTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  const module_id = document.getElementById('taskModule').value;
+  const assignee_id = document.getElementById('taskAssignee').value;
+  const description = document.getElementById('taskDesc').value.trim();
+
+  if (!title) return toast('请输入任务标题', 'error');
+
+  try {
+    await fetch(API + '/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, module_id, assignee_id, description }),
+    });
+    closeModal();
+    navigate('tasks');
+    toast('任务创建成功', 'success');
+  } catch(e) {}
+}
+
+async function updateTaskStatus(tid, status) {
+  try {
+    await fetch(API + `/tasks/${tid}?status=${status}`, { method: 'PUT' });
+    navigate('tasks');
+    toast(`任务状态已更新`, 'success');
+  } catch(e) {}
+}
+
+async function deleteTask(tid) {
+  if (!confirm('确认删除此任务？')) return;
+  try {
+    await fetch(API + `/tasks/${tid}`, { method: 'DELETE' });
+    navigate('tasks');
+  } catch(e) {}
+}
+
+async function deleteFile(mid, filename) {
+  if (!confirm(`确认删除 ${filename}？`)) return;
+  try {
+    await fetch(API + `/modules/${mid}/file/${encodeURIComponent(filename)}?user=${currentUser.name}`, { method: 'DELETE' });
+    toast('文件已删除', 'success');
+    await showModuleDetail(mid);
+  } catch(e) {}
+}
+
+// ============================================================
+// 模态框: 分配负责人
+// ============================================================
+async function showAssignModal(mid) {
+  let users = [];
+  try { users = (await api('/users')).users; } catch(e) {}
+
+  const box = document.getElementById('modalBox');
+  box.innerHTML = `
+    <div class="modal-header">👥 分配负责人 - ${mid}<span class="modal-close" onclick="closeModal()">×</span></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">选择负责人（可多选）</label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${users.map(u => `
+            <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;">
+              <input type="checkbox" value="${u.id}" class="assign-checkbox">
+              <div class="user-avatar" style="width:28px;height:28px;">${u.name[0]}</div>
+              <div><div style="font-weight:500;">${u.name}</div><div style="font-size:12px;color:var(--text-secondary);">${u.role} · ${u.department}</div></div>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="assignUsers('${mid}')">确认分配</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+async function assignUsers(mid) {
+  const userIds = [...document.querySelectorAll('.assign-checkbox:checked')].map(cb => cb.value);
+  try {
+    await fetch(API + `/modules/${mid}/assign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ module_id: mid, user_ids: userIds }),
+    });
+    closeModal();
+    toast('负责人分配成功', 'success');
+  } catch(e) {}
+}
+
+// ============================================================
+// 模态框: 添加成员
+// ============================================================
+function showUserModal() {
+  const box = document.getElementById('modalBox');
+  box.innerHTML = `
+    <div class="modal-header">➕ 添加项目成员<span class="modal-close" onclick="closeModal()">×</span></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="newUsername" placeholder="登录用户名"></div>
+      <div class="form-group"><label class="form-label">姓名</label><input class="form-input" id="newName" placeholder="真实姓名"></div>
+      <div class="form-group">
+        <label class="form-label">角色</label>
+        <select class="form-select" id="newRole"><option>管理员</option><option>分析师</option><option>操作员</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">部门</label>
+        <select class="form-select" id="newDept"><option>技术部</option><option>风控部</option><option>研究部</option><option>交易部</option><option>运营部</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="addUser()">添加</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+async function addUser() {
+  const username = document.getElementById('newUsername').value.trim();
+  const name = document.getElementById('newName').value.trim();
+  const role = document.getElementById('newRole').value;
+  const department = document.getElementById('newDept').value;
+  if (!username || !name) return toast('请填写完整信息', 'error');
+  try {
+    await fetch(API + '/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, name, role, department }),
+    });
+    closeModal();
+    navigate('users');
+    toast('成员添加成功', 'success');
+  } catch(e) {}
+}
+
+async function deleteUser(uid) {
+  if (!confirm('确认移除此成员？')) return;
+  try {
+    await fetch(API + `/users/${uid}`, { method: 'DELETE' });
+    navigate('users');
+  } catch(e) {}
+}
+
+// ============================================================
+// 工具函数
+// ============================================================
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+function getFileIcon(ext) {
+  const map = { '.py': '🐍', '.js': '🟨', '.ts': '🔷', '.tsx': '⚛️', '.jsx': '⚛️', '.json': '📋', '.csv': '📊', '.xlsx': '📈', '.txt': '📝', '.md': '📖', '.sql': '🗄', '.sh': '💻', '.ipynb': '📓', '.yaml': '⚙️', '.yml': '⚙️' };
+  return map[ext] || '📄';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// 模块名称映射（用于数据上传下拉框）
+const MODULE_DEFS_FOR_SELECT = {
+  dashboard: '数据看板', risk: '风控数据', underlying: '底层参数',
+  performance: '绩效分析', subjective_nav: '主观净值分析', subjective_holdings: '主观持仓分析',
+  subjective_pnl: '主观盈亏分析', correlation: '相关性分析',
+  fof_report: 'FOF-申赎数据', fof_holdings: 'FOF-持仓数据',
+  fof_nav: 'FOF-净值数据', fof_analysis: 'FOF-净值分析',
+  bond_source: '券源数据', user_management: '用户管理'
+};
+
+// 初始化
+(async function init() {
+  try {
+    const r = await api('/stats');
+    document.getElementById('apiStatus').innerHTML = '● API 已连接';
+    document.getElementById('apiStatus').className = 'badge success';
+  } catch(e) {
+    document.getElementById('apiStatus').innerHTML = '● API 未连接';
+    document.getElementById('apiStatus').className = 'badge error';
+  }
+  navigate('overview');
+})();
+</script>
+</body>
+</html>
