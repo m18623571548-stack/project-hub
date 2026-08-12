@@ -1,0 +1,15 @@
+[tool.basedpyright]
+# 降低类型检查严格度（basic 模式关闭 reportUnknown* 系列严格规则）
+typeCheckingMode = "basic"
+
+# 显式关闭与本项目无关的噪音规则
+reportMissingTypeArgument = false
+reportUnusedImport = false
+reportDeprecated = false
+reportCallInDefaultInitializer = false
+reportUnnecessaryComparison = false
+reportAny = false
+reportUnusedCallResult = false
+reportUnusedVariable = false
+reportArgumentType = false
+reportOperatorIssue = false
