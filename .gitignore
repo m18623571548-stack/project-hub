@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
+*.log
 server/data.json
 uploads/
 *.egg-info/
