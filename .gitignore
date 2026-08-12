@@ -4,3 +4,5 @@ server/data.json
 uploads/
 *.egg-info/
 .DS_Store
+node_modules/
+web/node_modules/
