@@ -405,15 +405,24 @@ async def project_stats():
 
 
 # ============================================================
-# 静态文件服务（前端）
+# 静态文件服务（前端 React 构建产物）
 # ============================================================
-frontend_dir = BASE_DIR / "frontend"
-if frontend_dir.exists():
+static_dir = BASE_DIR / "server" / "static"
+if static_dir.exists():
     @app.get("/")
     async def serve_frontend():
-        return FileResponse(frontend_dir / "index.html")
+        return FileResponse(static_dir / "index.html")
 
-    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+else:
+    # 回退到原始前端目录
+    frontend_dir = BASE_DIR / "frontend"
+    if frontend_dir.exists():
+        @app.get("/")
+        async def serve_frontend_fallback():
+            return FileResponse(frontend_dir / "index.html")
+
+        app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
 
 
 # ============================================================

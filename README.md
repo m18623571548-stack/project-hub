@@ -11,10 +11,18 @@ project-hub/
 ├── server/                    # FastAPI 后端服务
 │   ├── main.py               # API 接口（模块管理、用户、任务、文件上传）
 │   ├── requirements.txt      # Python 依赖
-│   └── data.json             # 用户/任务数据持久化
-├── frontend/
-│   └── index.html            # 协作管理前端界面（单文件 SPA）
-├── modules/                  # 各模块代码目录（14 个模块）
+│   ├── data.json             # 用户/任务数据持久化
+│   └── static/               # React 前端构建产物（自动部署）
+├── web/                       # React + TypeScript 前端
+│   ├── src/                  # 源代码
+│   │   ├── components/       # 公共组件
+│   │   ├── pages/            # 页面组件
+│   │   ├── utils/            # API 工具
+│   │   └── App.tsx           # 路由配置
+│   ├── package.json          # 前端依赖
+│   └── vite.config.ts        # Vite 构建配置
+├── frontend/                  # 旧版单文件前端（备用）
+├── modules/                   # 各模块代码目录（14 个模块）
 │   ├── dashboard/            # 数据看板
 │   ├── risk/                 # 风控数据
 │   ├── underlying/           # 底层参数
@@ -29,39 +37,47 @@ project-hub/
 │   ├── fof_analysis/         # FOF-净值分析
 │   ├── bond_source/          # 券源数据
 │   └── user_management/      # 用户管理
-└── uploads/                  # 原始数据文件上传目录
+└── uploads/                   # 原始数据文件上传目录
 ```
 
 ## 快速启动
 
-### 1. 安装后端依赖
+### 方式一：一键启动（推荐）
 
 ```bash
-cd server
-pip install -r requirements.txt
+cd /workspace/project-hub
+./start.sh
 ```
 
-### 2. 启动后端服务
+服务运行在 `http://localhost:5000`
+
+### 方式二：手动启动
 
 ```bash
+# 1. 安装后端依赖
 cd server
+pip install -r requirements.txt
+
+# 2. 启动服务
 python main.py
 ```
 
-服务运行在 `http://localhost:8888`
-
-### 3. 访问协作空间
-
-打开浏览器访问 `http://localhost:8888`
-
-### 4. 启动数据看板（可选）
+### 方式三：开发模式（前端热更新）
 
 ```bash
-cd ../data-management-system
+# 终端 1: 启动后端
+cd server
+python main.py
+
+# 终端 2: 启动前端开发服务器
+cd web
+npm install
 npm run dev
 ```
 
-看板预览地址：`http://localhost:3000`
+前端开发服务器运行在 `http://localhost:3000`，会自动代理 API 请求到后端。
+
+---
 
 ## 功能说明
 
